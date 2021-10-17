@@ -69,19 +69,25 @@ void UeRrcTask::startConnectionEstablishment(OctetString &&nasPdu)
         asn::SetBitStringLong<39>(static_cast<int64_t>(gutiOrTmsi->tmsi) |
                                       (static_cast<int64_t>((gutiOrTmsi->amfPointer & 0b1111111)) << 39ull),
                                   m_initialId.choice.ng_5G_S_TMSI_Part1);
+      
+        asn::SetBitStringLong<39>(Random::Mixed(m_base->config->getNodeName()).nextL(), m_initialId.choice.randomValue);
     }
     else
     {
+        //Without R when present is randomValue
         m_initialId.present = ASN_RRC_InitialUE_Identity_PR_randomValue;
         asn::SetBitStringLong<39>(Random::Mixed(m_base->config->getNodeName()).nextL(), m_initialId.choice.randomValue);
     }
 
     /* Set the Initial NAS PDU */
     m_initialNasPdu = std::move(nasPdu);
-
+    
+    /* Add R */
+    m_initialId
+  
     /* Send the message */
     m_logger->debug("Sending RRC Setup Request");
-
+  
     auto *rrcSetupRequest =
         ConstructSetupRequest(m_initialId, static_cast<ASN_RRC_EstablishmentCause_t>(m_establishmentCause));
     sendRrcMessage(activeCell, rrcSetupRequest);
